@@ -39,6 +39,11 @@ namespace MiniDeluxe
             }
 
             tbPort.Text = Properties.Settings.Default.Port.ToString();
+            cbEnableLegacyProtocol.Checked = Properties.Settings.Default.EnableLegacyProtocol;
+            cbEnableNewProtocol.Checked = Properties.Settings.Default.EnableNewProtocol;
+            tbNewProtocolPort.Text = Properties.Settings.Default.NewProtocolPort.ToString();
+            tbNewProtocolContextId.Text = Properties.Settings.Default.NewProtocolContextId;
+            tbNewProtocolRadioName.Text = Properties.Settings.Default.NewProtocolRadioName;
             tbHigh.Text = Properties.Settings.Default.HighInterval.ToString();
             tbLow.Text = Properties.Settings.Default.LowInterval.ToString();
             cbLocalOnly.Checked = Properties.Settings.Default.LocalOnly;
@@ -68,6 +73,11 @@ namespace MiniDeluxe
                 Properties.Settings.Default.SerialPortIdx = cbSerialport.SelectedIndex;
                 Properties.Settings.Default.SerialPort = cbSerialport.Text;
                 Properties.Settings.Default.Port = int.Parse(tbPort.Text);
+                Properties.Settings.Default.EnableLegacyProtocol = cbEnableLegacyProtocol.Checked;
+                Properties.Settings.Default.EnableNewProtocol = cbEnableNewProtocol.Checked;
+                Properties.Settings.Default.NewProtocolPort = int.Parse(tbNewProtocolPort.Text);
+                Properties.Settings.Default.NewProtocolContextId = tbNewProtocolContextId.Text;
+                Properties.Settings.Default.NewProtocolRadioName = tbNewProtocolRadioName.Text;
                 Properties.Settings.Default.HighInterval = double.Parse(tbHigh.Text);
                 Properties.Settings.Default.LowInterval = double.Parse(tbLow.Text);
                 Properties.Settings.Default.FirstRun = false;
@@ -115,8 +125,7 @@ namespace MiniDeluxe
         {
             try
             {
-                //DDUtilState.RadioData r = new DDUtilState.RadioData();
-                RIOX.RIOXData r = new RIOX.RIOXData();                
+                DDUtilState.RadioData r = new DDUtilState.RadioData();
                 _c = new RIOX.RIOXClient(r.GetType(), txtRIOXIP.Text, int.Parse(txtRIOXport.Text));
                 _c.SendCommand(new RIOX.RIOXCommand("UpDateType", "PSH:500"));
                 _c.SendCommand(new RIOX.RIOXCommand("Sub", "ZZFA;"));
@@ -130,14 +139,9 @@ namespace MiniDeluxe
 
         void c_ObjectReceivedEvent(object o, RIOX.RIOXClient.ObjectReceivedEventArgs e)
         {
-            //DDUtilState.RadioData r = (DDUtilState.RadioData)e.DataObject;
-            RIOX.RIOXData r = (RIOX.RIOXData)e.DataObject;
+            DDUtilState.RadioData r = (DDUtilState.RadioData)e.DataObject;
             Console.WriteLine("R: " + r.ToString());
-            foreach (DictionaryEntry de in r)
-            {
-                Console.WriteLine("Key: {0} Value {1}", de.Key, de.Value);
-            }
-            MessageBox.Show("Success: Received Frequency: " + r["ZZFA"]);
+            MessageBox.Show("Success: Received Frequency: " + r.vfoa);
             _c.Close();
         }
      }

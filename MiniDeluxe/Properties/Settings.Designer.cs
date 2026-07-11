@@ -58,6 +58,66 @@ namespace MiniDeluxe.Properties {
                 this["Port"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool EnableLegacyProtocol {
+            get {
+                return ((bool)(this["EnableLegacyProtocol"]));
+            }
+            set {
+                this["EnableLegacyProtocol"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool EnableNewProtocol {
+            get {
+                return ((bool)(this["EnableNewProtocol"]));
+            }
+            set {
+                this["EnableNewProtocol"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("7810")]
+        public int NewProtocolPort {
+            get {
+                return ((int)(this["NewProtocolPort"]));
+            }
+            set {
+                this["NewProtocolPort"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("179")]
+        public string NewProtocolContextId {
+            get {
+                return ((string)(this["NewProtocolContextId"]));
+            }
+            set {
+                this["NewProtocolContextId"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("SMART SDR")]
+        public string NewProtocolRadioName {
+            get {
+                return ((string)(this["NewProtocolRadioName"]));
+            }
+            set {
+                this["NewProtocolRadioName"] = value;
+            }
+        }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]

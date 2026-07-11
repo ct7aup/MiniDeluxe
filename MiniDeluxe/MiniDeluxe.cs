@@ -1,4 +1,4 @@
-﻿/* This file is part of MiniDeluxe.
+/* This file is part of MiniDeluxe.
    MiniDeluxe is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
@@ -11,7 +11,7 @@
 
    You should have received a copy of the GNU General Public License
    along with MiniDeluxe.  If not, see <http://www.gnu.org/licenses/>.
-   
+
    MiniDeluxe is Copyright (C) 2010 by K1FSY
 */
 using System;
@@ -31,7 +31,8 @@ namespace MiniDeluxe
         private Timer _timerLong;
         private CATConnector _cat;
         private RIOX.RIOXClient _riox;
-        private HRDTCPServer _server;
+        private HRDTCPServer _legacyServer;
+        private HRDTCPServer _newServer;
         private readonly NotifyIcon _notifyIcon;
         private bool _stopping;
         //private bool _listenOnly;
@@ -53,7 +54,7 @@ namespace MiniDeluxe
             public string rawmode;
             public string dspfilters;
             public ArrayList dspfilterarray;
-            public bool mox;            
+            public bool mox;
 
             public string Mode
             {
@@ -104,7 +105,7 @@ namespace MiniDeluxe
                             break;
                         default:
                             _mode = value;
-                            break;                            
+                            break;
                     }
                 }
             }
@@ -230,7 +231,7 @@ namespace MiniDeluxe
                 get { return _smeter; }
                 set
                 {
-                    float i = (float.Parse(value) / 2f) - 121f;                    
+                    float i = (float.Parse(value) / 2f) - 121f;
                     if (i < -121) _smeter = "0";
                     else if (i < -115) _smeter = "1";
                     else if (i < -109) _smeter = "2";
@@ -255,7 +256,7 @@ namespace MiniDeluxe
                 {
                     try
                     {
-                        _dspfilter = (String) dspfilterarray[int.Parse(value)];                        
+                        _dspfilter = (String) dspfilterarray[int.Parse(value)];
                     }
                     catch (Exception)
                     {
@@ -286,7 +287,7 @@ namespace MiniDeluxe
                 }
             }
         }
-        
+
         public MiniDeluxe()
         {
             _notifyIcon = new NotifyIcon(this);
@@ -308,9 +309,9 @@ namespace MiniDeluxe
             //Debug(String.Format("RX: {0}", s));
 #endif
 
-            if (s.Contains("GET"))            
-                ProcessHRDTCPGetCommand(s,bw);                                                      
-            else if(s.Contains("SET"))            
+            if (s.Contains("GET"))
+                ProcessHRDTCPGetCommand(s,bw);
+            else if(s.Contains("SET"))
                 ProcessHRDTCPSetCommand(s,bw);
 
             GC.Collect();
@@ -340,25 +341,25 @@ namespace MiniDeluxe
             // RIOX connection check
             if (_riox.IsConnected == false)
             {
-                SetNotifyIconText("MiniDeluxe - RIOX Disconnected (" + _server.ConnectionCount + " connections)");
+                SetNotifyIconText("MiniDeluxe - RIOX Disconnected (" + GetConnectionCount() + " connections)");
                 _riox.Connect();
             }
 
             _riox.SendCommand(new RIOXCommand("Sub", "ZZIF;ZZFA;ZZFB;ZZBS;ZZDM;ZZGT;ZZPA;ZZFI;"));
-             
-        }   
+
+        }
 
         void CatcatEvent(object sender, CATEventArgs e)
         {
             switch(e.Command)
             {
                 // vfoa, mode, xmit status
-                case "ZZIF": case "IF":                
+                case "ZZIF": case "IF":
                     if(!_usingRIOX) // may be an issue with ddutil and zzif; will investigate
-                        _data.vfoa = e.Data.Substring(0, 11); 
+                        _data.vfoa = e.Data.Substring(0, 11);
                     // has the mode changed? if so, ask for new dsp string.
-                    if (!_data.rawmode.Equals(e.Data.Substring(27, 2)))                    
-                        WriteCommand("ZZMN" + e.Data.Substring(27, 2) + "");                    
+                    if (!_data.rawmode.Equals(e.Data.Substring(27, 2)))
+                        WriteCommand("ZZMN" + e.Data.Substring(27, 2) + "");
                     _data.Mode = e.Data.Substring(27, 2);
                     _data.mox = (e.Data.Substring(26, 1).Equals("1")) ? true : false;
                     break;
@@ -385,7 +386,7 @@ namespace MiniDeluxe
                 case "ZZMN":
                     ProcessDSPFilters(e.Data);
                     break;
-                case "ZZSM":                    
+                case "ZZSM":
                     _data.Smeter = e.Data.Substring(1);
                     break;
                 case "ZZTX":
@@ -400,8 +401,8 @@ namespace MiniDeluxe
             }
             GC.Collect();
             GC.WaitForPendingFinalizers();
-        }        
-        
+        }
+
         void ProcessDSPFilters(String data)
         {
             StringBuilder s = new StringBuilder();
@@ -436,17 +437,17 @@ namespace MiniDeluxe
                                            "UNKN"
                                        };
 
-            _data.dspfilters = Regex.Replace(s.ToString(), " ", "", RegexOptions.Compiled);   
+            _data.dspfilters = Regex.Replace(s.ToString(), " ", "", RegexOptions.Compiled);
         }
 
         void ProcessHRDTCPGetCommand(String s, BinaryWriter bw)
-        {            
-            if (s.Contains("GET ID"))            
-                bw.Write(HRDMessage.HRDMessageToByteArray("Ham Radio Deluxe"));            
-            else if (s.Contains("GET VERSION"))            
+        {
+            if (s.Contains("GET ID"))
+                bw.Write(HRDMessage.HRDMessageToByteArray("Ham Radio Deluxe"));
+            else if (s.Contains("GET VERSION"))
                 bw.Write(HRDMessage.HRDMessageToByteArray("v5.23")); // W0DHB fix for v5.23
-            else if (s.Contains("GET FREQUENCY"))            
-                bw.Write(HRDMessage.HRDMessageToByteArray(_data.vfoa));            
+            else if (s.Contains("GET FREQUENCY"))
+                bw.Write(HRDMessage.HRDMessageToByteArray(_data.vfoa));
             else if (s.Contains("GET RADIO"))
             {
 
@@ -459,20 +460,20 @@ namespace MiniDeluxe
                     bw.Write(HRDMessage.HRDMessageToByteArray("PowerSDR SmartSDR"));
                 }
             }
-            else if (s.Contains("GET CONTEXT"))            
-                bw.Write(HRDMessage.HRDMessageToByteArray("1"));           
-            else if (s.Contains("GET FREQUENCIES"))            
+            else if (s.Contains("GET CONTEXT"))
+                bw.Write(HRDMessage.HRDMessageToByteArray("1"));
+            else if (s.Contains("GET FREQUENCIES"))
                 bw.Write(HRDMessage.HRDMessageToByteArray(_data.vfoa + "-" + _data.vfob));
-            else if (s.Contains("GET DROPDOWN-TEXT"))            
-                bw.Write(HRDMessage.HRDMessageToByteArray(GetDropdownText(s)));            
-            else if (s.Contains("GET DROPDOWN-LIST"))            
+            else if (s.Contains("GET DROPDOWN-TEXT"))
+                bw.Write(HRDMessage.HRDMessageToByteArray(GetDropdownText(s)));
+            else if (s.Contains("GET DROPDOWN-LIST"))
                 bw.Write(HRDMessage.HRDMessageToByteArray(GetDropdownList(s)));
             else if (s.Contains("GET LOGBOOKUPDATES"))
                 bw.Write(HRDMessage.HRDMessageToByteArray("0"));
             else if (s.Contains("GET BUTTONS"))
                 bw.Write(HRDMessage.HRDMessageToByteArray(GetButtons()));
-            else if (s.Contains("GET SMETER-MAIN"))            
-                bw.Write(HRDMessage.HRDMessageToByteArray(String.Format("S{0},{0},1.5", 14 - int.Parse(_data.Smeter))));            
+            else if (s.Contains("GET SMETER-MAIN"))
+                bw.Write(HRDMessage.HRDMessageToByteArray(String.Format("S{0},{0},1.5", 14 - int.Parse(_data.Smeter))));
             else if (s.Contains("GET BUTTON-SELECT TX"))
                 bw.Write(HRDMessage.HRDMessageToByteArray(_data.mox ? "1" : "0"));
             else if (s.Contains("GET DROPDOWNS"))
@@ -480,11 +481,11 @@ namespace MiniDeluxe
             else if (s.Contains("GET VFO-COUNT"))
                 bw.Write(HRDMessage.HRDMessageToByteArray("2"));
             else
-                bw.Write(HRDMessage.HRDMessageToByteArray("0"));            
+                bw.Write(HRDMessage.HRDMessageToByteArray("0"));
         }
 
         void ProcessHRDTCPSetCommand(String s, BinaryWriter bw)
-        {            
+        {
             Debug(String.Format("SET COMMAND: {0}", s));
 
             if (s.Contains("SET DROPDOWN"))
@@ -497,7 +498,7 @@ namespace MiniDeluxe
                 String vfob = String.Format("{0:00000000000}", long.Parse(m.Groups[2].Value));
                 if (vfoa != "00000000000")
 			WriteCommand("ZZFA" + vfoa + ";");
-        	if (vfob != "00000000000")
+                if (vfob != "00000000000")
 			WriteCommand("ZZFB" + vfob + ";");
                 _data.vfoa = vfoa;
                 _data.vfob = vfob;
@@ -516,7 +517,227 @@ namespace MiniDeluxe
             // tell the program that the command executed OK, regardless if it did or not.
             bw.Write(HRDMessage.HRDMessageToByteArray("OK"));
         }
-                
+
+        void ServerNewHRDTCPEvent(object sender, HRDTCPEventArgs e)
+        {
+            String raw = e.ToString();
+            int nul = raw.IndexOf('\0');
+            if (nul >= 0)
+                raw = raw.Substring(0, nul);
+
+            String[] commands = raw.Split('\t');
+            ArrayList responses = new ArrayList();
+
+            foreach (String command in commands)
+                responses.Add(ProcessNewProtocolCommand(command));
+
+            String[] responseArray = (String[])responses.ToArray(typeof(String));
+            BinaryWriter bw = new BinaryWriter(e.Client.GetStream());
+            bw.Write(HRDMessage.HRDMessageToByteArray(String.Join("\t", responseArray)));
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+
+        String ProcessNewProtocolCommand(String rawCommand)
+        {
+            String command = NormalizeNewProtocolCommand(rawCommand);
+            if (command.Length == 0)
+                return String.Empty;
+
+            if (CommandEquals(command, "get context"))
+                return Properties.Settings.Default.NewProtocolContextId;
+
+            if (CommandEquals(command, "get radios"))
+                return Properties.Settings.Default.NewProtocolContextId + ":" + Properties.Settings.Default.NewProtocolRadioName;
+
+            if (CommandEquals(command, "get dropdowns"))
+                return "Mode,AGC,SSB Fltr ,CW Fltr,DSP Fltr AM,DIgi Fltr";
+
+            if (CommandEquals(command, "get buttons"))
+                return "RIT cl,RIT,XIT cl,Split,XIT,TX,NR,TX - A,TX - B";
+
+            if (CommandEquals(command, "get sliders"))
+                return "DSP high cut,DSP low cut,NB1 threshold,RF power";
+
+            if (CommandEquals(command, "get freqx"))
+                return GetNewProtocolFreqx();
+
+            if (CommandStartsWith(command, "get dropdown-list"))
+                return GetNewProtocolDropdownList(command);
+
+            if (CommandStartsWith(command, "get dropdown-text"))
+                return GetNewProtocolDropdownText(command);
+
+            if (CommandStartsWith(command, "set dropdown mode"))
+            {
+                SetNewProtocolMode(command);
+                return "OK";
+            }
+
+            if (CommandStartsWith(command, "set frequencies-hz"))
+            {
+                SetNewProtocolFrequencies(command);
+                return "OK";
+            }
+
+            return String.Empty;
+        }
+
+        String NormalizeNewProtocolCommand(String command)
+        {
+            if (command == null)
+                return String.Empty;
+
+            command = command.Trim();
+            Match m = Regex.Match(command, @"^\[(\d+)\]\s*(.*)$", RegexOptions.Compiled);
+            if (m.Success)
+                command = m.Groups[2].Value.Trim();
+
+            return command;
+        }
+
+        static bool CommandEquals(String command, String expected)
+        {
+            return String.Equals(command, expected, StringComparison.OrdinalIgnoreCase);
+        }
+
+        static bool CommandStartsWith(String command, String expected)
+        {
+            return command.StartsWith(expected, StringComparison.OrdinalIgnoreCase);
+        }
+
+        String GetNewProtocolFreqx()
+        {
+            return GetNewProtocolFrequency() + "$0$0$Mode: " + GetNewProtocolModeDisplay() + "$" + GetNewProtocolModeList() + "$$$0";
+        }
+
+        String GetNewProtocolFrequency()
+        {
+            try
+            {
+                return long.Parse(_data.vfoa).ToString();
+            }
+            catch (Exception)
+            {
+                return "0";
+            }
+        }
+
+        String GetNewProtocolModeDisplay()
+        {
+            if (String.Equals(_data.Mode, "CWU", StringComparison.OrdinalIgnoreCase))
+                return "CW";
+
+            if (String.IsNullOrEmpty(_data.Mode))
+                return "OFF";
+
+            return _data.Mode;
+        }
+
+        static String GetNewProtocolModeList()
+        {
+            return "LSB,USB,CWL,CW,FM,AM,DIGU,DIGL";
+        }
+
+        String GetNewProtocolDropdownList(String command)
+        {
+            String name = GetBracketedControlName(command);
+
+            if (String.Equals(name, "Mode", StringComparison.OrdinalIgnoreCase))
+                return GetNewProtocolModeList();
+
+            if (String.Equals(name, "AGC", StringComparison.OrdinalIgnoreCase))
+                return "Fixed,Slow,Med,Fast";
+
+            return String.Empty;
+        }
+
+        String GetNewProtocolDropdownText(String command)
+        {
+            String name = GetBracketedControlName(command);
+
+            if (String.Equals(name, "Mode", StringComparison.OrdinalIgnoreCase))
+                return "Mode: " + GetNewProtocolModeDisplay();
+
+            if (String.Equals(name, "AGC", StringComparison.OrdinalIgnoreCase))
+                return "AGC: " + _data.AGC;
+
+            return String.Empty;
+        }
+
+        static String GetBracketedControlName(String command)
+        {
+            Match m = Regex.Match(command, @"\{(.+?)\}", RegexOptions.Compiled);
+            if (!m.Success)
+                return String.Empty;
+
+            return m.Groups[1].Value.Trim();
+        }
+
+        void SetNewProtocolMode(String command)
+        {
+            Match m = Regex.Match(command, @"^set\s+dropdown\s+mode\s+(\S+)\s+(\d+)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            if (!m.Success)
+                return;
+
+            String catMode = GetNewProtocolCatMode(m.Groups[1].Value, m.Groups[2].Value);
+            if (String.IsNullOrEmpty(catMode))
+                return;
+
+            WriteCommand("ZZMD" + catMode + ";");
+            WriteCommand("ZZMN" + catMode + ";");
+            _data.Mode = catMode;
+            if (!_usingRIOX) WriteCommand("ZZFI;");
+        }
+
+        static String GetNewProtocolCatMode(String modeValue, String indexValue)
+        {
+            if (String.Equals(modeValue, "LSB", StringComparison.OrdinalIgnoreCase)) return "00";
+            if (String.Equals(modeValue, "USB", StringComparison.OrdinalIgnoreCase)) return "01";
+            if (String.Equals(modeValue, "CWL", StringComparison.OrdinalIgnoreCase)) return "03";
+            if (String.Equals(modeValue, "CW", StringComparison.OrdinalIgnoreCase)) return "04";
+            if (String.Equals(modeValue, "FM", StringComparison.OrdinalIgnoreCase)) return "05";
+            if (String.Equals(modeValue, "AM", StringComparison.OrdinalIgnoreCase)) return "06";
+            if (String.Equals(modeValue, "DIGU", StringComparison.OrdinalIgnoreCase)) return "07";
+            if (String.Equals(modeValue, "DIGL", StringComparison.OrdinalIgnoreCase)) return "09";
+
+            switch (indexValue)
+            {
+                case "0": return "00";
+                case "1": return "01";
+                case "2": return "03";
+                case "3": return "04";
+                case "4": return "05";
+                case "5": return "06";
+                case "6": return "07";
+                case "7": return "09";
+                default: return String.Empty;
+            }
+        }
+
+        void SetNewProtocolFrequencies(String command)
+        {
+            Match m = Regex.Match(command, @"^set\s+frequencies-hz\s+(\d+)\s+(\d+)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            if (!m.Success)
+                return;
+
+            String vfoa = String.Format("{0:00000000000}", long.Parse(m.Groups[1].Value));
+            String vfob = String.Format("{0:00000000000}", long.Parse(m.Groups[2].Value));
+
+            if (vfoa != "00000000000")
+            {
+                WriteCommand("ZZFA" + vfoa + ";");
+                _data.vfoa = vfoa;
+            }
+
+            if (vfob != "00000000000")
+            {
+                WriteCommand("ZZFB" + vfob + ";");
+                _data.vfob = vfob;
+            }
+        }
+
         static String GetButtons()
         {
             return "TX";
@@ -529,18 +750,18 @@ namespace MiniDeluxe
 
         String GetDropdownText(String s)
         {
-            StringBuilder output = new StringBuilder();            
-            MatchCollection mc = Regex.Matches(s, "{([A-Z~]+)}", RegexOptions.Compiled);            
+            StringBuilder output = new StringBuilder();
+            MatchCollection mc = Regex.Matches(s, "{([A-Z~]+)}", RegexOptions.Compiled);
 
-            if(mc.Count == 0) return String.Empty; 
+            if(mc.Count == 0) return String.Empty;
 
             foreach (Match m in mc)
-            {                
+            {
                 switch (m.Groups[1].Value)
                 {
                     case "MODE":
                         output.Append("Mode: " + _data.Mode + "\u0009");
-                        break; 
+                        break;
                     case "BAND":
                         output.Append("Band: " + _data.Band + "\u0009");
                         break;
@@ -561,8 +782,8 @@ namespace MiniDeluxe
                         break;
                 }
             }
-            
-            // remove trailing \u0009 or else HRD Logbook wont parse it properly       
+
+            // remove trailing \u0009 or else HRD Logbook wont parse it properly
             return output.ToString().Remove(output.ToString().LastIndexOf('\u0009'));
         }
 
@@ -597,7 +818,7 @@ namespace MiniDeluxe
             }
 
             return output;
-        }        
+        }
 
         void SetDropdown(String s)
         {
@@ -613,8 +834,8 @@ namespace MiniDeluxe
                     _data.Mode = mode;
                     if(!_usingRIOX) WriteCommand("ZZFI;");
                     break;
-                case "DSP~FLTR":                    
-                    String fltr = String.Format("{0:00}", int.Parse(m.Groups[3].Value));                    
+                case "DSP~FLTR":
+                    String fltr = String.Format("{0:00}", int.Parse(m.Groups[3].Value));
                     WriteCommand("ZZFI" + fltr + ";");
                     _data.DSPFilter = fltr;
                     break;
@@ -623,7 +844,7 @@ namespace MiniDeluxe
                     _data.AGC = m.Groups[3].Value;
                     break;
                 case "BAND":
-                    String band = Regex.Replace(m.Groups[2].Value, "M", "");                    
+                    String band = Regex.Replace(m.Groups[2].Value, "M", "");
                     if (band.Equals("GEN"))
                     {
                         WriteCommand("ZZBS888;");
@@ -637,7 +858,7 @@ namespace MiniDeluxe
                         break;
                     }
                     if(band.Contains("V")) return; // not implementing vhf band switching yet
-                    
+
                     String output = String.Format("{0:000}", int.Parse(band));
                     WriteCommand("ZZBS" + output + ";");
                     _data.Band = output;
@@ -660,10 +881,10 @@ namespace MiniDeluxe
 
             switch(m.Groups[1].Value)
             {
-                case "TX":                                                     
+                case "TX":
                     WriteCommand("ZZTX" + (_data.mox ? "0" : "1") + ";");
                     _data.mox = _data.mox ? false : true;
-                    break;                    
+                    break;
             }
 
             return "OK";
@@ -685,11 +906,8 @@ namespace MiniDeluxe
 
         public bool HRDTCPServer_IsListening()
         {
-            if(_server != null)
-            {
-                return _server.IsListening;
-            }
-            return false;
+            return (_legacyServer != null && _legacyServer.IsListening) ||
+                   (_newServer != null && _newServer.IsListening);
         }
 
         public void SetNotifyIconText(String s)
@@ -716,16 +934,18 @@ namespace MiniDeluxe
                 if (_timerShort != null) _timerShort.Stop();
                 if (_timerLong != null) _timerLong.Stop();
                 if (_cat != null) _cat.Close();
-                if (_server != null) _server.Close();
+                if (_legacyServer != null) _legacyServer.Close();
+                if (_newServer != null) _newServer.Close();
                 if (_riox != null)
                 {
                     if (_riox.IsConnected) _riox.SendCommand(new RIOXCommand("UnSub", "NONE"));
                     _riox.Close();
                 }
-                
+
 
                 _cat = null;
-                _server = null;
+                _legacyServer = null;
+                _newServer = null;
                 _timerShort = null;
                 _timerLong = null;
                 SetNotifyIconText("MiniDeluxe - Stopped");
@@ -745,6 +965,7 @@ namespace MiniDeluxe
         {
             try
             {
+                _usingRIOX = false;
                 _data = new RadioData
                 {
                     vfoa = "0",
@@ -767,7 +988,7 @@ namespace MiniDeluxe
                     try
                     {
                         Console.WriteLine("RIOX initializing");
-                        _riox = new RIOX.RIOXClient(typeof(RIOXData), Properties.Settings.Default.RIOXIP, Properties.Settings.Default.RIOXPort);
+                        _riox = new RIOX.RIOXClient(typeof(DDUtilState.RadioData), Properties.Settings.Default.RIOXIP, Properties.Settings.Default.RIOXPort);
                         _riox.ObjectReceivedEvent += new RIOX.RIOXClient.ObjectReceivedEventHandler(_riox_ObjectReceivedEvent);
                         _usingRIOX = true;
                     }
@@ -780,16 +1001,20 @@ namespace MiniDeluxe
                 else
                 {
                     _cat = new CATConnector(new SerialPort(Properties.Settings.Default.SerialPort));
-                    _timerShort = new Timer(Properties.Settings.Default.HighInterval);                    
+                    _timerShort = new Timer(Properties.Settings.Default.HighInterval);
                     _cat.CATEvent += CatcatEvent;
-                    _timerShort.Elapsed += TimerShortElapsed;                    
+                    _timerShort.Elapsed += TimerShortElapsed;
                 }
 
                 _timerLong = new Timer(Properties.Settings.Default.LowInterval);
                 _timerLong.Elapsed += TimerLongElapsed;
 
                 //_listenOnly = Properties.Settings.Default.ListenOnly;
-                _server = new HRDTCPServer(this);
+                if (Properties.Settings.Default.EnableLegacyProtocol)
+                    _legacyServer = new HRDTCPServer(this, Properties.Settings.Default.Port);
+
+                if (Properties.Settings.Default.EnableNewProtocol)
+                    _newServer = new HRDTCPServer(this, Properties.Settings.Default.NewProtocolPort);
 
             }
             catch (Exception e)
@@ -800,7 +1025,11 @@ namespace MiniDeluxe
                 return;
             }
 
-            _server.HRDTCPEvent += ServerHRDTCPEvent;
+            if (_legacyServer != null)
+                _legacyServer.HRDTCPEvent += ServerHRDTCPEvent;
+
+            if (_newServer != null)
+                _newServer.HRDTCPEvent += ServerNewHRDTCPEvent;
 
             // Start the timers only if serial polling is enabled
             if (!_usingRIOX)
@@ -811,7 +1040,7 @@ namespace MiniDeluxe
                 WriteCommand("ZZFB;");
                 WriteCommand("ZZBS;");
                 WriteCommand("ZZDM;");
-                WriteCommand("ZZGT;");              
+                WriteCommand("ZZGT;");
                 WriteCommand("ZZPA;");
                 WriteCommand("ZZFI;");
 
@@ -823,30 +1052,81 @@ namespace MiniDeluxe
                 // subscribe to what we want from DDUtil
                 _riox.SendCommand(new RIOXCommand("UpDateType", "PSH:500"));
                 //_riox.SendCommand(new RIOXCommand("UnSub", "NONE"));
-                _riox.SendCommand(new RIOXCommand("Sub","ZZIF;ZZFA;ZZFB;ZZBS;ZZDM;ZZGT;ZZPA;ZZFI;"));               
+                _riox.SendCommand(new RIOXCommand("Sub","ZZIF;ZZFA;ZZFB;ZZBS;ZZDM;ZZGT;ZZPA;ZZFI;"));
             }
 
             _timerLong.Start();
-            _server.Start();
+            if (_legacyServer != null)
+                _legacyServer.Start();
+
+            if (_newServer != null)
+                _newServer.Start();
 
             SetNotifyIconText("MiniDeluxe - Running (0 connections)");
         }
 
         void _riox_ObjectReceivedEvent(object o, RIOX.RIOXClient.ObjectReceivedEventArgs e)
         {
-            RIOXData rd = (RIOXData)e.DataObject;
-            Console.WriteLine("ObjectReceived " + rd.Count);
-            
-            // pass it through the CAT event parser since DDUtil passes them as command/data key/pair
-            foreach(DictionaryEntry de in rd)
-            {
-                CATEventArgs c = new CATEventArgs((string)de.Key, (string)de.Value);
-                Console.WriteLine("Key: {0} Val: {1}", de.Key, de.Value);
-                CatcatEvent(this, c);
-            }
-            
+            DDUtilState.RadioData rd = (DDUtilState.RadioData)e.DataObject;
+            Console.WriteLine("ObjectReceived RadioData");
+
+            ApplyRIOXRadioData(rd);
         }
-        
+
+        private void ApplyRIOXRadioData(DDUtilState.RadioData rd)
+        {
+            ApplyRIOXValue("ZZFA", rd.vfoa);
+            ApplyRIOXValue("ZZFB", rd.vfob);
+            ApplyRIOXValue("ZZBS", rd.bandr1);
+            ApplyRIOXValue("ZZDM", rd.dispmode);
+            ApplyRIOXValue("ZZGT", rd.agc);
+            ApplyRIOXValue("ZZSM", rd.smtr);
+            ApplyRIOXValue("ZZFI", rd.fltr1);
+
+            if (!String.IsNullOrEmpty(rd.moder1))
+                CatcatEvent(this, new CATEventArgs("ZZIF", BuildRIOXIfData(rd)));
+        }
+
+        private void ApplyRIOXValue(String command, String value)
+        {
+            if (String.IsNullOrEmpty(value))
+                return;
+
+            CatcatEvent(this, new CATEventArgs(command, value));
+        }
+
+        private static String BuildRIOXIfData(DDUtilState.RadioData rd)
+        {
+            String vfoa = String.IsNullOrEmpty(rd.vfoa) ? "00000000000" : String.Format("{0:00000000000}", long.Parse(rd.vfoa));
+            String tx = rd.mox ? "1" : "0";
+            String mode = GetRIOXCatMode(rd.moder1);
+            return vfoa + "               " + tx + mode;
+        }
+
+        private static String GetRIOXCatMode(String mode)
+        {
+            if (String.IsNullOrEmpty(mode))
+                return "99";
+
+            if (Regex.IsMatch(mode, @"^\d{2}$"))
+                return mode;
+
+            if (Regex.IsMatch(mode, @"^\d$"))
+                return "0" + mode;
+
+            if (String.Equals(mode, "LSB", StringComparison.OrdinalIgnoreCase)) return "00";
+            if (String.Equals(mode, "USB", StringComparison.OrdinalIgnoreCase)) return "01";
+            if (String.Equals(mode, "CWL", StringComparison.OrdinalIgnoreCase)) return "03";
+            if (String.Equals(mode, "CW", StringComparison.OrdinalIgnoreCase)) return "04";
+            if (String.Equals(mode, "CWU", StringComparison.OrdinalIgnoreCase)) return "04";
+            if (String.Equals(mode, "FM", StringComparison.OrdinalIgnoreCase)) return "05";
+            if (String.Equals(mode, "AM", StringComparison.OrdinalIgnoreCase)) return "06";
+            if (String.Equals(mode, "DIGU", StringComparison.OrdinalIgnoreCase)) return "07";
+            if (String.Equals(mode, "DIGL", StringComparison.OrdinalIgnoreCase)) return "09";
+
+            return "99";
+        }
+
         public void EndProgram()
         {
             Stop();
@@ -888,5 +1168,18 @@ namespace MiniDeluxe
                 _cat.WriteCommand(data);
             }
         }
-    }  
+
+        private int GetConnectionCount()
+        {
+            int count = 0;
+
+            if (_legacyServer != null)
+                count += _legacyServer.ConnectionCount;
+
+            if (_newServer != null)
+                count += _newServer.ConnectionCount;
+
+            return count;
+        }
+    }
 }

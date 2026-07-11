@@ -11,6 +11,21 @@
     <Setting Name="Port" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">7809</Value>
     </Setting>
+    <Setting Name="EnableLegacyProtocol" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="EnableNewProtocol" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="NewProtocolPort" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">7810</Value>
+    </Setting>
+    <Setting Name="NewProtocolContextId" Type="System.String" Scope="User">
+      <Value Profile="(Default)">179</Value>
+    </Setting>
+    <Setting Name="NewProtocolRadioName" Type="System.String" Scope="User">
+      <Value Profile="(Default)">SMART SDR</Value>
+    </Setting>
     <Setting Name="LowInterval" Type="System.Double" Scope="User">
       <Value Profile="(Default)">5000</Value>
     </Setting>

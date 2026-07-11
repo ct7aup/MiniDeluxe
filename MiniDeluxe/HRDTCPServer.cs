@@ -38,11 +38,16 @@ namespace MiniDeluxe
         private readonly TcpListener _listener;
 
         public HRDTCPServer(MiniDeluxe parent)
+            : this(parent, Properties.Settings.Default.Port)
+        {
+        }
+
+        public HRDTCPServer(MiniDeluxe parent, int port)
         {
             _parent = parent;
             _connectionCount = 0;
             _listener = new TcpListener(Properties.Settings.Default.LocalOnly ? IPAddress.Loopback : IPAddress.Any,
-                                            Properties.Settings.Default.Port);
+                                            port);
         }
 
         public void Start()
