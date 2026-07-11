@@ -1,0 +1,67 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+  <Package
+    Name="MiniDeluxe"
+    Manufacturer="CT7AUP"
+    Version="1.0.0.0"
+    UpgradeCode="{5CE72AF5-F65C-47B7-B6AA-6A7C9C6C77DF}"
+    Scope="perMachine">
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of MiniDeluxe is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Icon Id="MiniDeluxeIcon" SourceFile="MiniDeluxe\Mic-20.ico" />
+    <Property Id="ARPPRODUCTICON" Value="MiniDeluxeIcon" />
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+    <WixVariable Id="WixUILicenseRtf" Value="Installer\License.rtf" />
+    <ui:WixUI Id="WixUI_InstallDir" />
+
+    <StandardDirectory Id="ProgramFilesFolder">
+      <Directory Id="INSTALLFOLDER" Name="MiniDeluxe" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="MiniDeluxe" />
+    </StandardDirectory>
+
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Component Id="MiniDeluxeExe" Guid="{180281A4-18B8-4D0F-9D10-7E705334EA93}">
+        <File Id="MiniDeluxeExeFile" Source="MiniDeluxe\bin\Release\MiniDeluxe.exe" KeyPath="yes" />
+      </Component>
+      <Component Id="MiniDeluxeConfig" Guid="{F913D1FD-8432-4E30-A308-8C78DE7BF3CE}">
+        <File Source="MiniDeluxe\bin\Release\MiniDeluxe.exe.config" KeyPath="yes" />
+      </Component>
+      <Component Id="RioXDll" Guid="{17B75845-1063-4C49-A64F-1F7F2AE8914E}">
+        <File Source="MiniDeluxe\bin\Release\RIOX.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="DDUtilStateDll" Guid="{4B0E766D-7E15-476A-B950-B0062E36AF7F}">
+        <File Source="MiniDeluxe\bin\Release\DDUtilState.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="GplText" Guid="{2EB5924A-00AE-49E6-A538-47731C0D5E33}">
+        <File Source="MiniDeluxe\bin\Release\gpl.txt" KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <DirectoryRef Id="ApplicationProgramsFolder">
+      <Component Id="StartMenuShortcut" Guid="{02188584-1C9A-48A6-8644-89DD1F4F78FA}">
+        <Shortcut
+          Id="ApplicationStartMenuShortcut"
+          Name="MiniDeluxe"
+          Description="MiniDeluxe"
+          Target="[INSTALLFOLDER]MiniDeluxe.exe"
+          WorkingDirectory="INSTALLFOLDER" />
+        <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall" />
+        <RegistryValue Root="HKCU" Key="Software\MiniDeluxe" Name="installed" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <Feature Id="ProductFeature" Title="MiniDeluxe" Level="1">
+      <ComponentRef Id="MiniDeluxeExe" />
+      <ComponentRef Id="MiniDeluxeConfig" />
+      <ComponentRef Id="RioXDll" />
+      <ComponentRef Id="DDUtilStateDll" />
+      <ComponentRef Id="GplText" />
+      <ComponentRef Id="StartMenuShortcut" />
+    </Feature>
+  </Package>
+</Wix>
